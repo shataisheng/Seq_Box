@@ -1,179 +1,305 @@
 # Seq_Box
 
-**DNA / 蛋白质序列操作工具箱**
+DNA/蛋白质序列操作工具箱
 
-Seq_Box 是一个面向生物信息学研究者的序列处理工具，支持命令行和桌面 GUI 两种使用方式。核心功能涵盖 FASTA 文件处理、DNA 基础操作与转换、蛋白质分析，零第三方依赖（GUI 除外），可轻松共享给同学和同事。
+## 简介
 
----
+Seq_Box 是一个功能强大的生物信息学工具箱，专门用于 DNA 和蛋白质序列的分析与操作。它提供了命令行界面和图形用户界面，方便不同需求的用户使用。
 
-## 功能概览
+## 功能特性
+
+### DNA 序列操作
+- 基本序列操作（反向互补、转录、翻译等）
+- 序列转换工具
+- 序列统计分析
+
+### 蛋白质序列操作
+- 蛋白质序列转换
+- 氨基酸分析
 
 ### FASTA 文件处理
-- **清洗**：去除非法字符、去重复序列、按长度过滤，支持 DNA / RNA / 蛋白质类型自动识别
-- **分割**：按记录数分割、平均分割为 N 个文件、每条序列单独一个文件
-- **合并**：合并多个 FASTA 文件，支持重复 ID 的自动重命名 / 报错 / 跳过 / 覆盖处理
-- **信息**：查看序列数量、总长度、平均 / 最短 / 最长长度
+- FASTA 文件读写
+- 序列批量处理
+- 文件格式转换
 
-### DNA 操作
-- **基础转换**：互补链、反向互补、转录（DNA→RNA）、逆转录（RNA→DNA）
-- **翻译**：支持 4 套密码子表（标准 / 脊椎动物线粒体 / 细菌 / 酵母线粒体），支持六框翻译
-- **ORF 搜索**：正反六框扫描，可设置最小 ORF 长度
-- **统计分析**：GC 含量、碱基组成、分子量、熔解温度（Wallace / Salt-adjusted / Nearest-neighbor）
-
-### 蛋白质分析
-- **格式转换**：氨基酸单字母 ↔ 三字母互转
-- **氨基酸信息**：全名、性质分类查询
-- **理化属性**：分子量、消光系数、等电点、特定 pH 下净电荷
-
----
+### 图形用户界面
+- 直观的 GUI 界面
+- 多功能页面（DNA、蛋白质、FASTA、历史记录、设置）
+- 操作历史记录
 
 ## 安装
 
-```bash
-# 仅安装核心功能（命令行）
-pip install seqbox
+### 系统要求
 
-# 安装含 GUI 的完整版
-pip install seqbox[gui]
+- Python 3.9 或更高版本
+- pip 包管理器
+
+### 从源码安装
+
+```bash
+# 克隆仓库
+git clone https://github.com/seqbox/seqbox.git
+cd seqbox
+
+# 安装核心功能
+pip install -e .
 ```
 
-> **Python 版本要求**：Python ≥ 3.9
+### 安装 GUI 依赖（可选）
 
----
-
-## 快速上手
-
-### 命令行
+如果需要使用图形用户界面，请安装额外的依赖：
 
 ```bash
-# 查看帮助
+pip install -e ".[gui]"
+```
+
+这将安装以下依赖：
+- PyQt6 >= 6.0（GUI 框架）
+- qtawesome >= 1.0（图标库）
+
+### 开发环境安装
+
+如果你希望参与项目开发，请安装开发依赖：
+
+```bash
+pip install -e ".[dev]"
+```
+
+这将安装以下开发工具：
+- pytest >= 7.0（测试框架）
+- pytest-cov（测试覆盖率）
+- black（代码格式化工具）
+- flake8（代码检查工具）
+
+### 验证安装
+
+安装完成后，可以通过以下命令验证：
+
+```bash
+# 检查命令行工具是否可用
+seqbox --version
+
+# 如果安装了 GUI
+seqbox-gui --help
+
+# 测试 Python 导入
+python -c "from seqbox.dna.basic import reverse_complement; print('安装成功！')"
+```
+
+## 使用方法
+
+### 命令行界面
+
+```bash
+# 启动命令行工具
+seqbox
+
+# 查看帮助信息
 seqbox --help
-seqbox fasta --help
+```
 
-# 查看 FASTA 文件信息
-seqbox fasta info input.fasta
+### 图形用户界面
 
-# 清洗序列（去非法字符，DNA 类型）
-seqbox fasta clean input.fasta output.fasta --type dna --remove-invalid
+```bash
+# 启动 GUI
+seqbox-gui
 
-# 按每 100 条分割
-seqbox fasta split input.fasta ./split_output --by-count 100 --prefix part
-
-# 合并多个文件
-seqbox fasta merge file1.fa file2.fa file3.fa -o merged.fasta
+# 或使用启动脚本（Windows）
+launch_gui.bat
 ```
 
 ### Python API
 
 ```python
-from seqbox.io.fasta import FastaReader, FastaWriter, clean_fasta
-from seqbox.dna.basic import complement, reverse_complement, gc_content
-from seqbox.dna.convert import transcribe, translate, find_orfs
-from seqbox.protein.convert import to_triple, calculate_isoelectric_point
+from seqbox.dna.basic import reverse_complement
+from seqbox.protein.convert import translate
 
-# 读取 FASTA 文件
-reader = FastaReader("input.fasta")
-records = reader.read_all()
-for r in records:
-    print(r.id, len(r.seq))
+# DNA 反向互补
+dna_seq = "ATCGATCG"
+rc_seq = reverse_complement(dna_seq)
 
-# DNA 操作
-seq = "ATGAAATTTGCCTAA"
-print(reverse_complement(seq))       # 反向互补
-print(gc_content(seq))               # GC 含量
-print(transcribe(seq))               # 转录为 RNA
-print(translate(seq))                # 翻译为蛋白质
-
-# 搜索 ORF
-orfs = find_orfs(seq, min_length=30)
-for orf in orfs:
-    print(orf)
-
-# 蛋白质分析
-protein = "MKAAA"
-print(to_triple(protein))                      # 三字母
-print(calculate_isoelectric_point(protein))    # 等电点
-
-# 清洗 FASTA 文件
-from seqbox.io.fasta import SeqType
-stats = clean_fasta("raw.fasta", "clean.fasta", seq_type=SeqType.DNA, remove_invalid=True)
-print(f"输入 {stats.input_count} 条 → 输出 {stats.output_count} 条")
+# DNA 翻译为蛋白质
+protein_seq = translate(dna_seq)
 ```
-
----
-
-## GUI 使用
-
-```bash
-# 启动桌面 GUI（需安装 PyQt6）
-pip install PyQt6
-seqbox-gui
-```
-
-GUI 提供以下页面：
-
-| 页面 | 功能 |
-|------|------|
-| FASTA 工具 | 清洗、分割、合并、信息查看 |
-| DNA 操作 | 基础转换、翻译、ORF 搜索、统计分析 |
-| 蛋白质 | 格式转换、理化属性分析 |
-| 历史记录 | 操作历史 |
-| 设置 | 主题与偏好设置 |
-
-### GUI 特色功能
-
-- **剪贴板粘贴**：支持直接粘贴 FASTA 序列，无需保存文件
-- **Excel 表格兼容**：从 Excel 复制两列数据（A 列 Header、B 列序列）可自动转换为 FASTA 格式
-- **结果预览与快速复制**：操作完成后在界面内直接预览结果，一键复制到剪贴板
-- **默认结果目录**：所有输出自动保存到 `results/YYYYMMDD_HHMMSS/` 时间戳子文件夹
-- **FASTA 换行设置**：支持 60 / 80 / 100 字符换行或不换行
-
----
 
 ## 项目结构
 
 ```
 seqbox/
-├── core/           # 序列基类（DNA / RNA / Protein），IUPAC 校验
-├── io/
-│   └── fasta.py    # FASTA 读写、清洗、分割、合并
-├── dna/
-│   ├── basic.py    # 互补、RC、GC、碱基统计、Tm 计算
-│   └── convert.py  # 转录、翻译、六框翻译、ORF 搜索
-├── protein/
-│   └── convert.py  # 单/三字母互转、理化属性
-├── gui/            # PyQt6 桌面 GUI
-│   ├── main_window.py
-│   └── pages/      # 各功能页面
-└── cli.py          # 命令行接口（argparse）
+├── core/           # 核心功能模块
+│   ├── alphabets.py    # 序列字母表定义
+│   └── sequence.py    # 序列基础类
+├── dna/            # DNA 序列操作
+│   ├── basic.py        # 基本 DNA 操作
+│   └── convert.py      # DNA 转换工具
+├── protein/        # 蛋白质序列操作
+│   └── convert.py      # 蛋白质转换工具
+├── io/             # 文件输入输出
+│   └── fasta.py        # FASTA 文件处理
+├── gui/            # 图形用户界面
+│   ├── main_window.py  # 主窗口
+│   └── pages/          # 各功能页面
+└── cli.py          # 命令行界面
 ```
 
----
+## 开发
 
-## 版本路线图
+### 测试指南
 
-| 版本 | 状态 | 内容 |
-|------|------|------|
-| v0.1.x | ✅ 完成 | 核心基类、FASTA I/O、清洗、分割、合并、CLI |
-| v0.1.6 | ✅ 完成 | DNA 基础操作、转换、ORF 搜索 |
-| v0.3.0 | ✅ 完成 | 蛋白质格式转换与理化分析 |
-| v0.4.0 | ✅ 完成 | PyQt6 桌面 GUI |
-| v2.0.0 | 📋 规划中 | 理化属性增强、引物/酶切、模式搜索、统计 |
-| v3.0.0 | 📋 规划中 | 序列比对、可视化、密码子优化、质谱模拟 |
+#### 运行测试
 
----
+```bash
+# 运行所有测试
+pytest
 
-## 依赖
+# 运行特定测试文件
+pytest tests/test_dna.py
 
-| 依赖 | 用途 | 是否必需 |
-|------|------|----------|
-| Python ≥ 3.9 | 运行环境 | ✅ 必需 |
-| PyQt6 | 桌面 GUI | ⭕ 可选 |
+# 运行特定测试函数
+pytest tests/test_dna.py::test_reverse_complement
 
-核心库（`seqbox.core`、`seqbox.io`、`seqbox.dna`、`seqbox.protein`）**零第三方依赖**，仅使用 Python 标准库。
+# 显示详细的测试输出
+pytest -v
 
----
+# 显示测试覆盖率
+pytest --cov=seqbox --cov-report=html
 
-## License
+# 运行测试并生成覆盖率报告
+pytest --cov=seqbox --cov-report=term-missing
+```
+
+#### 测试示例
+
+以下是一些测试示例，帮助你理解如何测试各个功能：
+
+```python
+# tests/test_dna.py
+import pytest
+from seqbox.dna.basic import reverse_complement, transcribe, translate
+
+def test_reverse_complement():
+    """测试 DNA 反向互补功能"""
+    assert reverse_complement("ATCG") == "CGAT"
+    assert reverse_complement("AATT") == "AATT"
+
+def test_transcribe():
+    """测试 DNA 转录功能"""
+    assert transcribe("ATCG") == "AUCG"
+
+def test_translate():
+    """测试 DNA 翻译功能"""
+    assert translate("ATG") == "M"
+    assert translate("TAA") == "*"
+
+# tests/test_protein.py
+import pytest
+from seqbox.protein.convert import reverse_translate
+
+def test_reverse_translate():
+    """测试蛋白质反向翻译功能"""
+    assert reverse_translate("M") == "ATG"
+```
+
+#### 测试最佳实践
+
+1. **编写清晰的测试名称**：测试函数名应该清楚地描述测试的内容
+2. **使用断言**：使用 `assert` 语句验证预期结果
+3. **测试边界情况**：测试空字符串、单个字符等边界情况
+4. **保持测试独立**：每个测试应该独立运行，不依赖其他测试
+5. **使用 fixtures**：对于重复的测试数据，使用 pytest fixtures
+
+### 代码格式化
+
+```bash
+# 运行所有测试
+pytest
+
+# 运行特定测试文件
+pytest tests/test_dna.py
+
+# 运行特定测试函数
+pytest tests/test_dna.py::test_reverse_complement
+
+# 显示详细的测试输出
+pytest -v
+
+# 显示测试覆盖率
+pytest --cov=seqbox --cov-report=html
+
+# 运行测试并生成覆盖率报告
+pytest --cov=seqbox --cov-report=term-missing
+```
+
+### 代码格式化
+
+```bash
+# 格式化所有代码
+black seqbox/
+
+# 检查代码格式（不修改文件）
+black --check seqbox/
+
+# 格式化特定文件
+black seqbox/dna/basic.py
+```
+
+### 代码检查
+
+```bash
+# 检查所有代码
+flake8 seqbox/
+
+# 检查特定文件
+flake8 seqbox/dna/basic.py
+
+# 显示更详细的错误信息
+flake8 --show-source seqbox/
+```
+
+### 开发工作流
+
+推荐的开发工作流程：
+
+```bash
+# 1. 创建开发分支
+git checkout -b feature/your-feature
+
+# 2. 进行代码修改
+
+# 3. 运行测试确保功能正常
+pytest
+
+# 4. 格式化代码
+black seqbox/
+
+# 5. 检查代码质量
+flake8 seqbox/
+
+# 6. 提交更改
+git add .
+git commit -m "描述你的更改"
+
+# 7. 推送到远程仓库
+git push origin feature/your-feature
+```
+
+## 许可证
 
 MIT License
+
+## 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 联系方式
+
+- 项目主页：https://github.com/seqbox/seqbox
+- 问题反馈：https://github.com/seqbox/seqbox/issues
+
+## 更新日志
+
+### 0.4.0
+- 初始版本发布
+- 核心功能实现
+- GUI 界面完成
+- 命令行工具支持
