@@ -285,6 +285,57 @@ def parse_fasta(file_path: Union[str, Path]) -> Iterator[FastaRecord]:
     yield from reader
 
 
+def parse_fasta_text(text: str) -> List[FastaRecord]:
+    """
+    从文本解析 FASTA 格式的序列
+    
+    Args:
+        text: FASTA 格式的文本内容
+        
+    Returns:
+        FastaRecord 列表
+    """
+    records = []
+    lines = text.strip().split('\n')
+    
+    current_id = None
+    current_desc = None
+    current_seq_lines = []
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        
+        if line.startswith('>'):
+            # 保存之前的记录
+            if current_id is not None and current_seq_lines:
+                records.append(FastaRecord(
+                    id=current_id,
+                    description=current_desc,
+                    seq=''.join(current_seq_lines)
+                ))
+            
+            # 解析新header
+            header = line[1:].strip()
+            parts = header.split(None, 1)
+            current_id = parts[0] if parts else ""
+            current_desc = parts[1] if len(parts) > 1 else ""
+            current_seq_lines = []
+        else:
+            current_seq_lines.append(line)
+    
+    # 保存最后一条记录
+    if current_id is not None and current_seq_lines:
+        records.append(FastaRecord(
+            id=current_id,
+            description=current_desc,
+            seq=''.join(current_seq_lines)
+        ))
+    
+    return records
+
+
 def write_fasta(
     records: List[FastaRecord],
     file_path: Union[str, Path],

@@ -126,15 +126,15 @@ class FastaPage(BasePage):
         type_layout.addWidget(QLabel("类型:"))
         self.clean_type = QComboBox()
         self.clean_type.addItems(["自动", "DNA", "RNA", "蛋白质"])
-        self.clean_type.setFixedWidth(70)
+        self.clean_type.setMinimumWidth(80)
         type_layout.addWidget(self.clean_type)
         options_layout.addLayout(type_layout, 0, 0)
         
-        self.clean_remove_invalid = QCheckBox("去非法字符")
+        self.clean_remove_invalid = QCheckBox("去除非法字符")
         self.clean_remove_invalid.setChecked(True)
         options_layout.addWidget(self.clean_remove_invalid, 0, 1)
-        
-        self.clean_remove_duplicates = QCheckBox("去重复")
+
+        self.clean_remove_duplicates = QCheckBox("去除重复序列")
         options_layout.addWidget(self.clean_remove_duplicates, 0, 2)
         
         # 第二行选项
@@ -158,8 +158,8 @@ class FastaPage(BasePage):
         wrap_layout.addWidget(QLabel("换行:"))
         self.clean_line_wrap = QComboBox()
         self.clean_line_wrap.addItems(["60", "80", "100", "不换"])
-        self.clean_line_wrap.setCurrentIndex(0)
-        self.clean_line_wrap.setFixedWidth(60)
+        self.clean_line_wrap.setCurrentIndex(3)  # 默认选择"不换"
+        self.clean_line_wrap.setMinimumWidth(70)
         wrap_layout.addWidget(self.clean_line_wrap)
         options_layout.addLayout(wrap_layout, 1, 1)
         
@@ -281,7 +281,7 @@ class FastaPage(BasePage):
         
         # 第一行
         count_layout = QHBoxLayout()
-        self.split_by_count = QCheckBox("按记录数")
+        self.split_by_count = QCheckBox("按记录数分割")
         self.split_by_count.setChecked(True)
         count_layout.addWidget(self.split_by_count)
         self.split_count = QSpinBox()
@@ -291,7 +291,7 @@ class FastaPage(BasePage):
         count_layout.addWidget(self.split_count)
         count_layout.addWidget(QLabel("条/文件"))
         mode_layout.addLayout(count_layout, 0, 0)
-        
+
         n_layout = QHBoxLayout()
         self.split_into_n = QCheckBox("平均分割为")
         n_layout.addWidget(self.split_into_n)
@@ -302,10 +302,10 @@ class FastaPage(BasePage):
         n_layout.addWidget(self.split_n)
         n_layout.addWidget(QLabel("个文件"))
         mode_layout.addLayout(n_layout, 0, 1)
-        
+
         # 第二行
         single_layout = QHBoxLayout()
-        self.split_single = QCheckBox("每条序列单独一个文件")
+        self.split_single = QCheckBox("每条序列单独成文件")
         single_layout.addWidget(self.split_single)
         single_layout.addWidget(QLabel("  前缀:"))
         self.split_prefix = QLineEdit()
@@ -399,7 +399,7 @@ class FastaPage(BasePage):
         self.merge_duplicate_handling.addItems(["自动重命名", "报错", "跳过", "覆盖"])
         options_layout.addWidget(self.merge_duplicate_handling, 0, 1)
         
-        self.merge_remove_duplicates = QCheckBox("去除序列内容完全相同的记录")
+        self.merge_remove_duplicates = QCheckBox("去除完全相同的重复序列")
         options_layout.addWidget(self.merge_remove_duplicates, 1, 0, 1, 2)
         
         layout.addWidget(options_group)

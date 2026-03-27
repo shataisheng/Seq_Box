@@ -27,7 +27,7 @@ requires-python = ">=3.9"
 dependencies = []
 
 [project.optional-dependencies]
-gui = ["PyQt6>=6.0", "qtawesome>=1.0"]
+gui = ["PyQt6>=6.0"]
 dev = ["pytest>=7.0", "pytest-cov", "black", "flake8"]
 
 [project.scripts]

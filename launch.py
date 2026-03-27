@@ -17,26 +17,18 @@ sys.path.insert(0, str(ROOT))
 
 def check_deps():
     """检查并提示安装缺失依赖"""
-    missing = []
     try:
         import PyQt6
     except ImportError:
-        missing.append("PyQt6")
-    try:
-        import qtawesome
-    except ImportError:
-        missing.append("qtawesome")
-
-    if missing:
-        print(f"[提示] 缺少依赖: {', '.join(missing)}")
+        print("[提示] 缺少依赖: PyQt6")
         ans = input("是否现在自动安装？[Y/n] ").strip().lower()
         if ans in ("", "y", "yes"):
             subprocess.check_call(
-                [sys.executable, "-m", "pip", "install"] + missing + ["-q"]
+                [sys.executable, "-m", "pip", "install", "PyQt6", "-q"]
             )
             print("[完成] 依赖安装成功\n")
         else:
-            print("[中止] 请手动运行: pip install PyQt6 qtawesome")
+            print("[中止] 请手动运行: pip install PyQt6")
             sys.exit(1)
 
 
