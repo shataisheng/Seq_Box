@@ -86,7 +86,6 @@ class AnalysisResult:
         if self.is_multi_chain_protein():
             mp = self.data
             # 整体汇总行
-            total_ext_coeff = sum(c.extinction_coeff for c in mp.chains)
             rows.append({
                 'type': 'summary',
                 'name': 'Overall',
@@ -94,9 +93,10 @@ class AnalysisResult:
                 'mw_expasy': mp.total_molecular_weight,
                 'mw': mp.summed_molecular_weight,
                 'pi': mp.overall_pi,
-                'ext_coeff': total_ext_coeff,
+                'ext_coeff': mp.overall_extinction_coeff,
                 'abs_expasy': mp.overall_absorbance,
                 'abs': mp.summed_absorbance,
+                'gravy': mp.overall_gravy,
             })
             # 各链详情
             for i, chain in enumerate(mp.chains, 1):
@@ -110,6 +110,7 @@ class AnalysisResult:
                     'ext_coeff': chain.extinction_coeff,
                     'abs_expasy': chain.absorbance,
                     'abs': chain.absorbance,
+                    'gravy': chain.gravy,
                 })
         else:
             for i, prop in enumerate(self.data, 1):
@@ -123,6 +124,7 @@ class AnalysisResult:
                     'ext_coeff': prop.extinction_coeff,
                     'abs_expasy': prop.absorbance,
                     'abs': prop.absorbance,
+                    'gravy': prop.gravy,
                 })
         
         return rows

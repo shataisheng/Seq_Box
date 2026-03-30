@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "seqbox"
-version = "0.4.0"
+version = "0.4.1"
 description = "DNA/蛋白质序列操作工具箱"
 readme = "README.md"
 license = {text = "MIT"}

@@ -154,7 +154,7 @@ if HAS_QT:
             layout.addStretch()
             
             # 版本信息
-            version = QLabel("v0.4.0")
+            version = QLabel("v0.4.1")
             version.setFont(QFont("Microsoft YaHei", 8))
             version.setStyleSheet(f"color: {COLORS['border']}; padding: 10px;")
             version.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -233,12 +233,18 @@ if HAS_QT:
             
             content_layout.addWidget(self.stack)
             
-            # 底部输出区
+            # 底部输出区（包装一层以对齐上方页面内容的 24px 边距）
+            log_wrapper = QWidget()
+            log_wrapper.setStyleSheet("background-color: transparent;")
+            log_layout = QHBoxLayout(log_wrapper)
+            log_layout.setContentsMargins(24, 0, 24, 12)
+            log_layout.setSpacing(0)
             self.output_panel = QTextEdit()
             self.output_panel.setReadOnly(True)
-            self.output_panel.setMaximumHeight(150)
+            self.output_panel.setMaximumHeight(120)
             self.output_panel.setPlaceholderText("输出日志...")
-            content_layout.addWidget(self.output_panel)
+            log_layout.addWidget(self.output_panel)
+            content_layout.addWidget(log_wrapper)
             
             layout.addWidget(content)
             

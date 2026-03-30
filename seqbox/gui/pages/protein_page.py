@@ -169,9 +169,9 @@ class ProteinPage(BasePage):
         
         # 详细数据表格
         self.result_table = QTableWidget()
-        self.result_table.setColumnCount(8)
+        self.result_table.setColumnCount(9)
         self.result_table.setHorizontalHeaderLabels([
-            "Name", "Len", "MW(Expasy)", "MW", "pI", "Ext.Coe", "Abs(Expasy)", "Abs"
+            "Name", "Len", "MW(Expasy)", "MW", "pI", "Ext.Coe", "Abs(Expasy)", "Abs", "Hb"
         ])
         
         # 表格样式
@@ -199,11 +199,13 @@ class ProteinPage(BasePage):
                 border: none;
                 border-bottom: 2px solid {COLORS['blue']};
                 font-weight: bold;
+                text-align: left;
             }}
         """)
         
         # 表头设置
         header = self.result_table.horizontalHeader()
+        header.setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
         self.result_table.setColumnWidth(0, 100)
@@ -292,30 +294,38 @@ class ProteinPage(BasePage):
             if is_summary:
                 summary_row_idx = row_idx
             
+            def item(text):
+                it = QTableWidgetItem(text)
+                it.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+                return it
+            
             # 名称
-            name_item = QTableWidgetItem(row_data['name'])
+            name_item = item(row_data['name'])
             self.result_table.setItem(row_idx, 0, name_item)
             
             # 长度
-            self.result_table.setItem(row_idx, 1, QTableWidgetItem(f"{row_data['length']:,}"))
+            self.result_table.setItem(row_idx, 1, item(f"{row_data['length']:,}"))
             
             # 分子量(Expasy)
-            self.result_table.setItem(row_idx, 2, QTableWidgetItem(f"{row_data['mw_expasy']:,.2f}"))
+            self.result_table.setItem(row_idx, 2, item(f"{row_data['mw_expasy']:,.2f}"))
             
             # 分子量(链汇总)
-            self.result_table.setItem(row_idx, 3, QTableWidgetItem(f"{row_data['mw']:,.2f}"))
+            self.result_table.setItem(row_idx, 3, item(f"{row_data['mw']:,.2f}"))
             
             # pI
-            self.result_table.setItem(row_idx, 4, QTableWidgetItem(f"{row_data['pi']:.2f}"))
+            self.result_table.setItem(row_idx, 4, item(f"{row_data['pi']:.2f}"))
             
             # 消光系数
-            self.result_table.setItem(row_idx, 5, QTableWidgetItem(f"{row_data['ext_coeff']:,}"))
+            self.result_table.setItem(row_idx, 5, item(f"{row_data['ext_coeff']:,}"))
             
             # 吸光度(Expasy)
-            self.result_table.setItem(row_idx, 6, QTableWidgetItem(f"{row_data['abs_expasy']:.4f}"))
+            self.result_table.setItem(row_idx, 6, item(f"{row_data['abs_expasy']:.4f}"))
             
             # 吸光度(链汇总)
-            self.result_table.setItem(row_idx, 7, QTableWidgetItem(f"{row_data['abs']:.4f}"))
+            self.result_table.setItem(row_idx, 7, item(f"{row_data['abs']:.4f}"))
+            
+            # Hb (GRAVY 疏水性指数)
+            self.result_table.setItem(row_idx, 8, item(f"{row_data['gravy']:.4f}"))
         
         # 默认选中整体行（第一行）以高亮显示
         if summary_row_idx is not None:
@@ -390,9 +400,9 @@ class ProteinPage(BasePage):
             return
         
         table_data = self.analysis_result.get_table_data()
-        lines = ["Name,Len,MW(Expasy),MW,pI,Ext.Coe,Abs(Expasy),Abs"]
+        lines = ["Name,Len,MW(Expasy),MW,pI,Ext.Coe,Abs(Expasy),Abs,Hb"]
         for row in table_data:
-            line = f"{row['name']},{row['length']},{row['mw_expasy']:.2f},{row['mw']:.2f},{row['pi']:.2f},{row['ext_coeff']},{row['abs_expasy']:.4f},{row['abs']:.4f}"
+            line = f"{row['name']},{row['length']},{row['mw_expasy']:.2f},{row['mw']:.2f},{row['pi']:.2f},{row['ext_coeff']},{row['abs_expasy']:.4f},{row['abs']:.4f},{row['gravy']:.4f}"
             lines.append(line)
         
         csv_text = "\n".join(lines)

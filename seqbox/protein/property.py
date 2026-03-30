@@ -166,11 +166,15 @@ class MultiChainProtein:
         return calculate_pi(self.combined_sequence)
     
     @property
+    def overall_extinction_coeff(self) -> int:
+        """整体消光系数（Expasy模式：基于合并序列计算，所有Cys对统一配对）"""
+        return calculate_extinction_coefficient(self.combined_sequence)
+
+    @property
     def overall_absorbance(self) -> float:
-        """整体吸光度"""
-        total_ext = sum(chain.extinction_coeff for chain in self.chains)
+        """整体吸光度（Expasy模式：消光系数基于合并序列）"""
         if self.total_molecular_weight > 0:
-            return total_ext / self.total_molecular_weight
+            return self.overall_extinction_coeff / self.total_molecular_weight
         return 0.0
     
     @property
