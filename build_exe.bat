@@ -14,22 +14,37 @@ if errorlevel 1 (
 )
 
 echo [1/5] 检查 PyInstaller...
-pip show pyinstaller >nul 2>&1
-if errorlevel 1 (
-    echo     PyInstaller 未安装，正在安装...
-    pip install pyinstaller
+REM 尝试使用 UV 安装
+python -m uv --version >nul 2>&1
+if errorlevel 0 (
+    echo     使用 UV 管理依赖
+    python -m uv add pyinstaller
 ) else (
-    echo     PyInstaller 已安装
+    echo     UV 不可用，使用 pip
+    pip show pyinstaller >nul 2>&1
+    if errorlevel 1 (
+        echo     PyInstaller 未安装，正在安装...
+        pip install pyinstaller
+    ) else (
+        echo     PyInstaller 已安装
+    )
 )
 
 echo.
 echo [2/5] 检查项目依赖...
-pip show PyQt6 >nul 2>&1
-if errorlevel 1 (
-    echo     正在安装 GUI 依赖...
-    pip install PyQt6
+python -m uv --version >nul 2>&1
+if errorlevel 0 (
+    echo     使用 UV 安装 GUI 依赖
+    python -m uv add PyQt6
 ) else (
-    echo     GUI 依赖已安装
+    echo     UV 不可用，使用 pip
+    pip show PyQt6 >nul 2>&1
+    if errorlevel 1 (
+        echo     正在安装 GUI 依赖...
+        pip install PyQt6
+    ) else (
+        echo     GUI 依赖已安装
+    )
 )
 
 echo.

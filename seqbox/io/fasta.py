@@ -76,7 +76,7 @@ class FastaRecord:
         转换为 FASTA 格式字符串
         
         Args:
-            line_width: 每行序列字符数
+            line_width: 每行序列字符数，0 表示不换行
             
         Returns:
             FASTA 格式字符串
@@ -85,11 +85,13 @@ class FastaRecord:
         if self.description:
             header += f" {self.description}"
         
-        lines = [header]
-        for i in range(0, len(self.seq), line_width):
-            lines.append(self.seq[i:i + line_width])
-        
-        return '\n'.join(lines)
+        if line_width > 0:
+            lines = [header]
+            for i in range(0, len(self.seq), line_width):
+                lines.append(self.seq[i:i + line_width])
+            return '\n'.join(lines)
+        else:
+            return f"{header}\n{self.seq}"
 
 
 class FastaReader:
@@ -318,7 +320,7 @@ def parse_fasta_text(text: str) -> List[FastaRecord]:
             
             # 解析新header
             header = line[1:].strip()
-            parts = header.split(None, 1)
+            parts = header.split(maxsplit=1)
             current_id = parts[0] if parts else ""
             current_desc = parts[1] if len(parts) > 1 else ""
             current_seq_lines = []
@@ -784,10 +786,20 @@ def split_fasta_to_single_files(
     reader = FastaReader(input_path)
     output_files: List[Path] = []
     index = 1
+    used_names: dict[str, int] = {}
     
     for record in reader:
         if naming == "id":
-            filename = f"{record.id}.fa"
+            header = record.id
+            if record.description:
+                header = f"{record.id} {record.description}"
+            
+            if header not in used_names:
+                used_names[header] = 0
+                filename = f"{header}.fa"
+            else:
+                used_names[header] += 1
+                filename = f"{header}({used_names[header]}).fa"
         else:
             filename = f"seq_{index:04d}.fa"
         

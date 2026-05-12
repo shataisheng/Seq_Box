@@ -1,10 +1,10 @@
 """
 Seq_Box - DNA/蛋白质序列操作工具箱
 
-版本: 0.1.5
+版本: 0.5.0
 """
 
-__version__ = "0.4.1"
+__version__ = "0.5.0"
 __author__ = "Seq_Box Team"
 
 from seqbox.core import Sequence, DNASequence, RNASequence, ProteinSequence

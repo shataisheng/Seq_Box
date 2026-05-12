@@ -13,6 +13,7 @@ Seq_Box - 蛋白质理化性质计算模块
 - 疏水性: GRAVY = 疏水性之和 / 残基数
 """
 
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Optional
 from collections import Counter
@@ -103,7 +104,7 @@ class ProteinProperties:
     extinction_coeff: int   # 摩尔消光系数
     absorbance: float       # 吸光度 (AU)
     gravy: float            # 疏水性指数
-    
+
     def to_dict(self) -> dict:
         """转换为字典"""
         return {
@@ -149,22 +150,22 @@ class MultiChainProtein:
         if self.summed_molecular_weight > 0:
             return total_ext / self.summed_molecular_weight
         return 0.0
-    
+
     @property
     def total_length(self) -> int:
         """总残基数"""
         return sum(chain.length for chain in self.chains)
-    
+
     @property
     def combined_sequence(self) -> str:
         """组合序列（用于计算整体pI）"""
         return ''.join(chain.sequence for chain in self.chains)
-    
+
     @property
     def overall_pi(self) -> float:
         """整体等电点（基于组合序列）"""
         return calculate_pi(self.combined_sequence)
-    
+
     @property
     def overall_extinction_coeff(self) -> int:
         """整体消光系数（Expasy模式：基于合并序列计算，所有Cys对统一配对）"""
@@ -176,19 +177,19 @@ class MultiChainProtein:
         if self.total_molecular_weight > 0:
             return self.overall_extinction_coeff / self.total_molecular_weight
         return 0.0
-    
+
     @property
     def overall_gravy(self) -> float:
         """整体疏水性"""
         total_hydro = sum(
-            KYTE_DOOLITTLE_HYDROPATHY.get(aa, 0) 
-            for chain in self.chains 
+            KYTE_DOOLITTLE_HYDROPATHY.get(aa, 0)
+            for chain in self.chains
             for aa in chain.sequence
         )
         if self.total_length > 0:
             return total_hydro / self.total_length
         return 0.0
-    
+
     def to_summary_dict(self) -> dict:
         """汇总信息字典（包含两种计算模式）"""
         return {
@@ -209,28 +210,25 @@ class MultiChainProtein:
 def calculate_molecular_weight(sequence: str) -> float:
     """
     计算蛋白质分子量
-    
+
     公式: 氨基酸平均质量之和 + 水分子质量
-    
+
     Args:
         sequence: 蛋白质序列（单字母代码）
-        
+
     Returns:
         分子量 (Da)
     """
     sequence = sequence.upper().strip()
     if not sequence:
         return 0.0
-    
+
     # 过滤非标准氨基酸
     valid_aas = [aa for aa in sequence if aa in AA_AVERAGE_MASS]
     if not valid_aas:
         return 0.0
-    
+
     total = sum(AA_AVERAGE_MASS[aa] for aa in valid_aas)
-    # 减去 (n-1) 个水分子（肽键形成时失去的水）
-    # 实际上 ProtParam 是加 1 个水分子，不是减
-    # 重新理解: 氨基酸残基质量之和 + 水分子质量
     return total + WATER_MASS
 
 
@@ -266,10 +264,8 @@ def calculate_extinction_coefficient(sequence: str, reduced_cysteines: bool = Fa
 
     cys_count = aa_count.get('C', 0)
     if reduced_cysteines:
-        # 还原型：每个Cys单独算
         ext += cys_count * EXTINCTION_COEFFICIENTS['C']
     else:
-        # 氧化型（默认）：Cys形成二硫键，每对算125
         ext += (cys_count // 2) * EXTINCTION_COEFFICIENTS['C']
 
     return ext
@@ -278,22 +274,22 @@ def calculate_extinction_coefficient(sequence: str, reduced_cysteines: bool = Fa
 def calculate_absorbance(sequence: str, mw: Optional[float] = None) -> float:
     """
     计算吸光度 (Absorbance)
-    
+
     公式: E(Prot) / Molecular_weight
-    
+
     Args:
         sequence: 蛋白质序列
         mw: 分子量（可选，不传则自动计算）
-        
+
     Returns:
         吸光度 (AU)
     """
     if mw is None:
         mw = calculate_molecular_weight(sequence)
-    
+
     if mw <= 0:
         return 0.0
-    
+
     ext = calculate_extinction_coefficient(sequence)
     return ext / mw
 
@@ -301,23 +297,23 @@ def calculate_absorbance(sequence: str, mw: Optional[float] = None) -> float:
 def calculate_gravy(sequence: str) -> float:
     """
     计算疏水性指数 (GRAVY)
-    
+
     公式: 疏水性之和 / 残基数
-    
+
     Args:
         sequence: 蛋白质序列
-        
+
     Returns:
         GRAVY 值（正值疏水，负值亲水）
     """
     sequence = sequence.upper().strip()
     if not sequence:
         return 0.0
-    
+
     valid_aas = [aa for aa in sequence if aa in KYTE_DOOLITTLE_HYDROPATHY]
     if not valid_aas:
         return 0.0
-    
+
     total_hydro = sum(KYTE_DOOLITTLE_HYDROPATHY[aa] for aa in valid_aas)
     return total_hydro / len(valid_aas)
 
@@ -327,96 +323,105 @@ def _get_corrected_pka(sequence: str) -> dict:
     corrected = PKA_DEFAULT.copy()
     if not sequence:
         return corrected
-    
+
     nterm = sequence[0].upper()
     cterm = sequence[-1].upper()
-    
+
     if nterm in PKA_NTERM_TABLE:
         corrected['Nterm'] = PKA_NTERM_TABLE[nterm]
     if cterm in PKA_CTERM_TABLE:
         corrected['Cterm'] = PKA_CTERM_TABLE[cterm]
-    
+
     return corrected
 
 
-def _calculate_charge(sequence: str, ph: float) -> float:
-    """计算给定pH下的净电荷"""
-    pka = _get_corrected_pka(sequence)
-    aa_count = Counter(sequence.upper())
-    
+def _charge_from_counts(aa_count: dict, pka: dict, ph: float) -> float:
+    """使用预计算的计数和 pKa 表计算给定 pH 下的净电荷（用于批量二分搜索）"""
     # 正电荷贡献 (碱性基团)
     pos_charge = (
-        aa_count.get('K', 0) / (1 + 10**(ph - pka['K'])) +
-        aa_count.get('R', 0) / (1 + 10**(ph - pka['R'])) +
-        aa_count.get('H', 0) / (1 + 10**(ph - pka['H'])) +
-        1 / (1 + 10**(ph - pka['Nterm']))  # N-末端
+        aa_count.get('K', 0) / (1 + 10 ** (ph - pka['K'])) +
+        aa_count.get('R', 0) / (1 + 10 ** (ph - pka['R'])) +
+        aa_count.get('H', 0) / (1 + 10 ** (ph - pka['H'])) +
+        1 / (1 + 10 ** (ph - pka['Nterm']))  # N-末端
     )
-    
+
     # 负电荷贡献 (酸性基团)
     neg_charge = (
-        aa_count.get('D', 0) / (1 + 10**(pka['D'] - ph)) +
-        aa_count.get('E', 0) / (1 + 10**(pka['E'] - ph)) +
-        aa_count.get('C', 0) / (1 + 10**(pka['C'] - ph)) +
-        aa_count.get('Y', 0) / (1 + 10**(pka['Y'] - ph)) +
-        1 / (1 + 10**(pka['Cterm'] - ph))  # C-末端
+        aa_count.get('D', 0) / (1 + 10 ** (pka['D'] - ph)) +
+        aa_count.get('E', 0) / (1 + 10 ** (pka['E'] - ph)) +
+        aa_count.get('C', 0) / (1 + 10 ** (pka['C'] - ph)) +
+        aa_count.get('Y', 0) / (1 + 10 ** (pka['Y'] - ph)) +
+        1 / (1 + 10 ** (pka['Cterm'] - ph))  # C-末端
     )
-    
+
     return pos_charge - neg_charge
+
+
+def _calculate_charge(sequence: str, ph: float) -> float:
+    """计算给定pH下的净电荷（委托给 _charge_from_counts）"""
+    pka = _get_corrected_pka(sequence)
+    aa_count = Counter(sequence.upper())
+    return _charge_from_counts(aa_count, pka, ph)
 
 
 def calculate_pi(sequence: str, precision: float = 0.0001) -> float:
     """
     计算等电点 (pI) - Bjellqvist 方案
-    
-    使用二分法找净电荷为0的pH值
-    
+
+    使用二分法找净电荷为0的pH值。
+    预计算 Counter 和 pKa 表，避免二分搜索内重复计算。
+
     Args:
         sequence: 蛋白质序列
         precision: 计算精度
-        
+
     Returns:
         等电点 pI 值
     """
     sequence = sequence.upper().strip()
     if not sequence:
         return 0.0
-    
+
+    # 预计算：Counter 和 pKa 表只算一次
+    aa_count = Counter(sequence)
+    pka = _get_corrected_pka(sequence)
+
     # 二分查找 pI (pH 范围 0-14)
     low, high = 0.0, 14.0
-    
+
     while high - low > precision:
         mid = (low + high) / 2
-        charge = _calculate_charge(sequence, mid)
-        
+        charge = _charge_from_counts(aa_count, pka, mid)
+
         if charge > 0:
             low = mid
         else:
             high = mid
-    
+
     return round((low + high) / 2, 2)
 
 
 def analyze_sequence(sequence: str) -> ProteinProperties:
     """
     分析单个蛋白质序列的所有理化性质
-    
+
     Args:
         sequence: 蛋白质序列（单字母代码）
-        
+
     Returns:
         ProteinProperties 数据对象
     """
     sequence = sequence.upper().strip()
     valid_aas = [aa for aa in sequence if aa in AA_AVERAGE_MASS]
     clean_seq = ''.join(valid_aas)
-    
+
     length = len(clean_seq)
     mw = calculate_molecular_weight(clean_seq)
     pi = calculate_pi(clean_seq)
     ext_coeff = calculate_extinction_coefficient(clean_seq)
     absorbance = calculate_absorbance(clean_seq, mw)
     gravy = calculate_gravy(clean_seq)
-    
+
     return ProteinProperties(
         sequence=clean_seq,
         length=length,
@@ -429,22 +434,22 @@ def analyze_sequence(sequence: str) -> ProteinProperties:
 
 
 def analyze_sequences(
-    sequences: List[str], 
+    sequences: List[str],
     same_protein: bool = True
 ) -> MultiChainProtein | List[ProteinProperties]:
     """
     批量分析蛋白质序列
-    
+
     Args:
         sequences: 蛋白质序列列表
         same_protein: 是否视为同一蛋白质的多条链
-        
+
     Returns:
         same_protein=True: MultiChainProtein 对象
         same_protein=False: ProteinProperties 列表
     """
     properties_list = [analyze_sequence(seq) for seq in sequences if seq.strip()]
-    
+
     if same_protein:
         return MultiChainProtein(chains=properties_list)
     else:

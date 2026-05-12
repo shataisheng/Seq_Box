@@ -4,6 +4,7 @@ Seq_Box - 序列字符集定义
 提供 DNA、RNA、蛋白质的 IUPAC 标准字符集及校验功能
 """
 
+from __future__ import annotations
 from typing import Set, FrozenSet
 
 
@@ -107,11 +108,11 @@ AA_EXTENDED_MEANING: dict[str, str] = {
 def validate_dna(sequence: str, allow_iupac: bool = True) -> tuple[bool, set[str]]:
     """
     校验 DNA 序列合法性
-    
+
     Args:
         sequence: 待校验序列（大写）
         allow_iupac: 是否允许简并碱基
-        
+
     Returns:
         (是否合法, 非法字符集合)
     """
@@ -124,11 +125,11 @@ def validate_dna(sequence: str, allow_iupac: bool = True) -> tuple[bool, set[str
 def validate_rna(sequence: str, allow_iupac: bool = True) -> tuple[bool, set[str]]:
     """
     校验 RNA 序列合法性
-    
+
     Args:
         sequence: 待校验序列（大写）
         allow_iupac: 是否允许简并碱基
-        
+
     Returns:
         (是否合法, 非法字符集合)
     """
@@ -141,11 +142,11 @@ def validate_rna(sequence: str, allow_iupac: bool = True) -> tuple[bool, set[str
 def validate_protein(sequence: str, allow_extended: bool = True) -> tuple[bool, set[str]]:
     """
     校验蛋白质序列合法性
-    
+
     Args:
         sequence: 待校验序列（大写）
         allow_extended: 是否允许扩展字符（BXZJUO）
-        
+
     Returns:
         (是否合法, 非法字符集合)
     """
@@ -158,66 +159,65 @@ def validate_protein(sequence: str, allow_extended: bool = True) -> tuple[bool, 
 def guess_sequence_type(sequence: str, sample_size: int = 1000) -> str:
     """
     根据序列内容猜测类型（核酸或蛋白质）
-    
+
     Args:
         sequence: 待检测序列
         sample_size: 抽样检查的字符数
-        
+
     Returns:
         'dna', 'rna', 'protein', 或 'unknown'
     """
     seq = sequence.upper().replace(' ', '').replace('-', '')[:sample_size]
-    
+
     if not seq:
         return 'unknown'
-    
+
     # 计算各类字符占比
     dna_chars = set('ACGT')
     rna_chars = set('ACGU')
     protein_only_chars = set('EFILPQ')
-    
+
     dna_count = sum(1 for c in seq if c in dna_chars)
     rna_count = sum(1 for c in seq if c in rna_chars)
     protein_only_count = sum(1 for c in seq if c in protein_only_chars)
-    
+
     total = len(seq)
     dna_ratio = dna_count / total
     rna_ratio = rna_count / total
     protein_only_ratio = protein_only_count / total
-    
+
     # 出现蛋白质特有氨基酸 → 确定为蛋白质
     if protein_only_ratio > 0.05:
         return 'protein'
-    
+
     # 出现 U 且很少 T → 可能是 RNA
     if 'U' in seq and 'T' not in seq:
         return 'rna'
-    
+
     # ACGT 占比 > 90% → 很可能是 DNA
     if dna_ratio > 0.90:
         return 'dna'
-    
+
     # ACGU 占比 > 90% 且含 U → 很可能是 RNA
     if rna_ratio > 0.90 and 'U' in seq:
         return 'rna'
-    
-    # 中间情况，根据 T/U 判断
-    if 'T' in seq and 'U' not in seq:
-        return 'dna'
-    if 'U' in seq and 'T' not in seq:
-        return 'rna'
-    
+
+    # 含较多非核酸字符 → 可能是蛋白质
+    non_nuc = sum(1 for c in seq if c not in dna_chars | rna_chars)
+    if non_nuc / total > 0.05:
+        return 'protein'
+
     return 'unknown'
 
 
 def clean_sequence(sequence: str, valid_chars: Set[str]) -> str:
     """
     清洗序列，只保留合法字符
-    
+
     Args:
-        sequence: 原始序列
-        valid_chars: 允许的字符集合
-        
+        sequence: 待清洗序列
+        valid_chars: 合法字符集
+
     Returns:
         清洗后的序列（大写）
     """

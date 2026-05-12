@@ -141,6 +141,7 @@ if HAS_QT:
                 ("FASTA 工具", "fasta", "📁"),
                 ("DNA 操作", "dna", "🧬"),
                 ("蛋白质", "protein", "🧪"),
+                ("序列比对", "align", "🔍"),
                 ("历史记录", "history", "📜"),
                 ("设置", "settings", "⚙️"),
             ]
@@ -154,7 +155,7 @@ if HAS_QT:
             layout.addStretch()
             
             # 版本信息
-            version = QLabel("v0.4.1")
+            version = QLabel("v0.5.0")
             version.setFont(QFont("Microsoft YaHei", 8))
             version.setStyleSheet(f"color: {COLORS['border']}; padding: 10px;")
             version.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -174,7 +175,7 @@ if HAS_QT:
             
             # 根据 page_id 激活对应按钮
             page_map = {
-                "fasta": 0, "dna": 1, "protein": 2, "history": 3, "settings": 4
+                "fasta": 0, "dna": 1, "protein": 2, "align": 3, "history": 4, "settings": 5
             }
             if page_id in page_map:
                 self.buttons[page_map[page_id]].setChecked(True)
@@ -217,7 +218,7 @@ if HAS_QT:
             self.stack = QStackedWidget()
             
             # 导入页面模块
-            from .pages import FastaPage, DnaPage, ProteinPage, HistoryPage, SettingsPage
+            from .pages import FastaPage, DnaPage, ProteinPage, HistoryPage, SettingsPage, AlignPage
             
             self.pages = {
                 "fasta": FastaPage(),
@@ -225,6 +226,7 @@ if HAS_QT:
                 "protein": ProteinPage(),
                 "history": HistoryPage(),
                 "settings": SettingsPage(),
+                "align": AlignPage(),
             }
             
             for page_id, page in self.pages.items():

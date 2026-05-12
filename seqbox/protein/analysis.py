@@ -4,13 +4,14 @@ Seq_Box - 蛋白质批量分析模块
 提供FASTA文件的批量蛋白质分析功能
 """
 
+from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Union
 from collections import Counter
 
 from .property import (
-    ProteinProperties, 
+    ProteinProperties,
     MultiChainProtein,
     analyze_sequence,
     analyze_sequences,
@@ -25,11 +26,11 @@ class AnalysisResult:
     same_protein_mode: bool
     chain_count: int
     data: Union[MultiChainProtein, List[ProteinProperties]]
-    
+
     def is_multi_chain_protein(self) -> bool:
         """是否为多链蛋白质模式"""
         return isinstance(self.data, MultiChainProtein)
-    
+
     def get_summary_text(self) -> str:
         """获取汇总文本（用于显示）"""
         lines = []
@@ -37,7 +38,7 @@ class AnalysisResult:
         lines.append(f"🔗 分析模式: {'同一蛋白质' if self.same_protein_mode else '多蛋白质'}")
         lines.append(f"🧬 序列条数: {self.chain_count}")
         lines.append("")
-        
+
         if self.is_multi_chain_protein():
             mp = self.data
             lines.append("═" * 50)
@@ -50,7 +51,7 @@ class AnalysisResult:
             lines.append(f"  整体吸光度: {mp.overall_absorbance:.4f}")
             lines.append(f"  整体疏水性 (GRAVY): {mp.overall_gravy:.4f}")
             lines.append("")
-            
+
             if mp.chain_count > 1:
                 lines.append("─" * 50)
                 lines.append("📋 各链详情")
@@ -76,13 +77,13 @@ class AnalysisResult:
                 lines.append(f"    消光系数: {prop.extinction_coeff:,}")
                 lines.append(f"    吸光度: {prop.absorbance:.4f}")
                 lines.append(f"    GRAVY: {prop.gravy:.4f}")
-        
+
         return "\n".join(lines)
-    
+
     def get_table_data(self) -> List[dict]:
         """获取表格数据（用于GUI表格展示）"""
         rows = []
-        
+
         if self.is_multi_chain_protein():
             mp = self.data
             # 整体汇总行
@@ -126,7 +127,7 @@ class AnalysisResult:
                     'abs': prop.absorbance,
                     'gravy': prop.gravy,
                 })
-        
+
         return rows
 
 
@@ -137,27 +138,27 @@ def analyze_fasta_file(
 ) -> AnalysisResult:
     """
     分析FASTA文件中的蛋白质序列
-    
+
     Args:
         file_path: FASTA文件路径
         same_protein: 是否视为同一蛋白质的多条链
         max_chains_warning: 超过此链数时建议确认
-        
+
     Returns:
         AnalysisResult 分析结果
     """
     file_path = Path(file_path)
-    
+
     # 读取FASTA文件
     with FastaReader(file_path) as reader:
         sequences = [record.seq for record in reader]
-    
+
     if not sequences:
         raise ValueError("FASTA file contains no sequences")
-    
+
     # 分析序列
     result_data = analyze_sequences(sequences, same_protein=same_protein)
-    
+
     return AnalysisResult(
         input_file=str(file_path),
         same_protein_mode=same_protein,
@@ -172,27 +173,27 @@ def analyze_fasta_text(
 ) -> AnalysisResult:
     """
     分析FASTA文本中的蛋白质序列
-    
+
     Args:
         text: FASTA格式的文本
         same_protein: 是否视为同一蛋白质的多条链
-        
+
     Returns:
         AnalysisResult 分析结果
     """
     from ..io.fasta import parse_fasta_text
-    
+
     # 解析FASTA文本
     records = parse_fasta_text(text)
-    
+
     if not records:
         raise ValueError("No valid FASTA sequences found")
-    
+
     sequences = [record.seq for record in records]
-    
+
     # 分析序列
     result_data = analyze_sequences(sequences, same_protein=same_protein)
-    
+
     return AnalysisResult(
         input_file="(clipboard)",
         same_protein_mode=same_protein,
@@ -214,7 +215,8 @@ def format_gravy(gravy: float) -> str:
         return f"{gravy:.4f} (疏水)"
     elif gravy < 0:
         return f"{gravy:.4f} (亲水)"
-    return f"{gravy:.4f} (中性)"
+    else:
+        return f"{gravy:.4f} (中性)"
 
 
 def format_pi(pi: float) -> str:
@@ -223,4 +225,5 @@ def format_pi(pi: float) -> str:
         return f"{pi:.2f} (酸性)"
     elif pi > 8:
         return f"{pi:.2f} (碱性)"
-    return f"{pi:.2f} (中性)"
+    else:
+        return f"{pi:.2f} (中性)"

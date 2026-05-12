@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit,
     QTextEdit, QComboBox, QSpinBox, QCheckBox, QGroupBox,
     QTabWidget, QWidget, QFileDialog, QMessageBox, QGridLayout,
-    QSplitter, QApplication
+    QSplitter, QApplication, QButtonGroup, QRadioButton
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QClipboard
@@ -213,6 +213,9 @@ class FastaPage(BasePage):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
         
+        # 分割方式按钮组
+        self.split_button_group = QButtonGroup()
+        
         # ===== 第一行：输入输出并排（高度对齐） =====
         io_row = QHBoxLayout()
         
@@ -281,8 +284,9 @@ class FastaPage(BasePage):
         
         # 第一行
         count_layout = QHBoxLayout()
-        self.split_by_count = QCheckBox("按记录数分割")
+        self.split_by_count = QRadioButton("按记录数分割")
         self.split_by_count.setChecked(True)
+        self.split_button_group.addButton(self.split_by_count)
         count_layout.addWidget(self.split_by_count)
         self.split_count = QSpinBox()
         self.split_count.setRange(1, 999999)
@@ -293,7 +297,8 @@ class FastaPage(BasePage):
         mode_layout.addLayout(count_layout, 0, 0)
 
         n_layout = QHBoxLayout()
-        self.split_into_n = QCheckBox("平均分割为")
+        self.split_into_n = QRadioButton("平均分割为")
+        self.split_button_group.addButton(self.split_into_n)
         n_layout.addWidget(self.split_into_n)
         self.split_n = QSpinBox()
         self.split_n.setRange(2, 999)
@@ -305,7 +310,8 @@ class FastaPage(BasePage):
 
         # 第二行
         single_layout = QHBoxLayout()
-        self.split_single = QCheckBox("每条序列单独成文件")
+        self.split_single = QRadioButton("每条序列单独成文件")
+        self.split_button_group.addButton(self.split_single)
         single_layout.addWidget(self.split_single)
         single_layout.addWidget(QLabel("  前缀:"))
         self.split_prefix = QLineEdit()
@@ -499,7 +505,7 @@ class FastaPage(BasePage):
             else:
                 self.log("已从剪贴板粘贴序列到清洗页面")
         else:
-            QMessageBox.information(self, "提示", "剪贴板中没有文本内容")
+            self.log("剪贴板中没有文本内容")
     
     def paste_from_clipboard_split(self):
         """从剪贴板粘贴序列到分割页面"""
@@ -513,7 +519,7 @@ class FastaPage(BasePage):
             else:
                 self.log("已从剪贴板粘贴序列到分割页面")
         else:
-            QMessageBox.information(self, "提示", "剪贴板中没有文本内容")
+            self.log("剪贴板中没有文本内容")
     
     def _convert_excel_to_fasta(self, text: str) -> str:
         """
@@ -586,9 +592,8 @@ class FastaPage(BasePage):
             clipboard = QApplication.clipboard()
             clipboard.setText(text)
             self.log("清洗结果已复制到剪贴板")
-            QMessageBox.information(self, "提示", "结果已复制到剪贴板")
         else:
-            QMessageBox.warning(self, "提示", "没有可复制的内容")
+            self.log("没有可复制的内容")
     
     def copy_split_result(self):
         """复制分割结果到剪贴板"""
@@ -597,9 +602,8 @@ class FastaPage(BasePage):
             clipboard = QApplication.clipboard()
             clipboard.setText(text)
             self.log("分割结果已复制到剪贴板")
-            QMessageBox.information(self, "提示", "结果已复制到剪贴板")
         else:
-            QMessageBox.warning(self, "提示", "没有可复制的内容")
+            self.log("没有可复制的内容")
     
     # ===== 执行方法 =====
     
@@ -654,7 +658,7 @@ class FastaPage(BasePage):
             self.log(f"清洗完成: {stats.input_count} → {stats.output_count} 条序列")
             
             # 根据换行设置重新格式化输出文件
-            line_width_map = {0: 60, 1: 80, 2: 100, 3: None}
+            line_width_map = {0: 60, 1: 80, 2: 100, 3: 0}
             line_width = line_width_map[self.clean_line_wrap.currentIndex()]
             
             if line_width is not None:
@@ -676,17 +680,9 @@ class FastaPage(BasePage):
                     self.clean_result_preview.setPlainText(preview)
             except Exception as read_err:
                 self.clean_result_preview.setPlainText(f"(无法读取预览: {read_err})")
-            
-            QMessageBox.information(
-                self, "完成",
-                f"清洗完成！\n\n"
-                f"输入: {stats.input_count} 条\n"
-                f"输出: {stats.output_count} 条\n"
-                f"去除重复: {stats.removed_duplicates} 条\n\n"
-                f"输出文件: {output_path}\n\n"
-                f"结果已显示在预览框，可直接复制使用。"
-            )
-            
+
+            self.log(f"清洗完成: {stats.input_count} → {stats.output_count} 条，输出: {output_path}")
+
         except Exception as e:
             QMessageBox.critical(self, "错误", f"清洗失败: {str(e)}")
             self.log(f"清洗错误: {e}")
@@ -770,14 +766,9 @@ class FastaPage(BasePage):
                         self.split_result_preview.setPlainText(header + preview)
                 except Exception as read_err:
                     self.split_result_preview.setPlainText(f"(无法读取预览: {read_err})")
-            
-            QMessageBox.information(
-                self, "完成", 
-                f"分割完成！生成 {len(files)} 个文件\n\n"
-                f"输出目录: {output_dir}\n\n"
-                f"第一个文件内容已显示在预览框，可直接复制使用。"
-            )
-                
+
+            self.log(f"分割完成: 生成 {len(files)} 个文件，输出目录: {output_dir}")
+
         except Exception as e:
             QMessageBox.critical(self, "错误", f"分割失败: {str(e)}")
             self.log(f"分割错误: {e}")
@@ -811,15 +802,7 @@ class FastaPage(BasePage):
             )
             
             self.log(f"合并完成: {stats.records_read} → {stats.records_written} 条序列")
-            QMessageBox.information(
-                self, "完成",
-                f"合并完成！\n\n"
-                f"处理文件: {stats.files_processed} 个\n"
-                f"读取记录: {stats.records_read} 条\n"
-                f"写入记录: {stats.records_written} 条\n"
-                f"ID 冲突: {stats.duplicates_found} 个"
-            )
-            
+
         except Exception as e:
             QMessageBox.critical(self, "错误", f"合并失败: {str(e)}")
             self.log(f"合并错误: {e}")

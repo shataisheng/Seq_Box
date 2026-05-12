@@ -37,10 +37,10 @@ class Sequence:
         description: str = "",
         seq_type: str = "unknown"
     ):
-        object.__setattr__(self, 'seq', seq.upper())
-        object.__setattr__(self, 'id', id)
-        object.__setattr__(self, 'description', description)
-        object.__setattr__(self, 'seq_type', seq_type)
+        self.seq = seq.upper()
+        self.id = id
+        self.description = description
+        self.seq_type = seq_type
     
     def __setattr__(self, name, value):
         object.__setattr__(self, name, value)
@@ -153,12 +153,12 @@ class DNASequence(Sequence):
                 invalid_str = ', '.join(sorted(invalid))
                 raise ValueError(f"Invalid DNA characters: {invalid_str}")
         
-        # 使用 object.__setattr__ 绕过 frozen dataclass 的限制
-        object.__setattr__(self, 'seq', seq)
-        object.__setattr__(self, 'id', id)
-        object.__setattr__(self, 'description', description)
-        object.__setattr__(self, 'seq_type', 'dna')
-        object.__setattr__(self, '_allow_iupac', allow_iupac)
+        # 设置实例属性
+        self.seq = seq
+        self.id = id
+        self.description = description
+        self.seq_type = 'dna'
+        self._allow_iupac = allow_iupac
     
     def complement(self) -> DNASequence:
         """返回互补链"""
@@ -227,12 +227,12 @@ class RNASequence(Sequence):
                 invalid_str = ', '.join(sorted(invalid))
                 raise ValueError(f"Invalid RNA characters: {invalid_str}")
         
-        # 使用 object.__setattr__ 绕过 frozen dataclass 的限制
-        object.__setattr__(self, 'seq', seq)
-        object.__setattr__(self, 'id', id)
-        object.__setattr__(self, 'description', description)
-        object.__setattr__(self, 'seq_type', 'rna')
-        object.__setattr__(self, '_allow_iupac', allow_iupac)
+        # 设置实例属性
+        self.seq = seq
+        self.id = id
+        self.description = description
+        self.seq_type = 'rna'
+        self._allow_iupac = allow_iupac
     
     def complement(self) -> RNASequence:
         """返回互补链"""
@@ -283,12 +283,12 @@ class ProteinSequence(Sequence):
                 invalid_str = ', '.join(sorted(invalid))
                 raise ValueError(f"Invalid protein characters: {invalid_str}")
         
-        # 使用 object.__setattr__ 绕过 frozen dataclass 的限制
-        object.__setattr__(self, 'seq', seq)
-        object.__setattr__(self, 'id', id)
-        object.__setattr__(self, 'description', description)
-        object.__setattr__(self, 'seq_type', 'protein')
-        object.__setattr__(self, '_allow_extended', allow_extended)
+        # 设置实例属性
+        self.seq = seq
+        self.id = id
+        self.description = description
+        self.seq_type = 'protein'
+        self._allow_extended = allow_extended
     
     def to_triple(self, separator: str = '-') -> str:
         """

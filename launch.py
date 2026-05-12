@@ -23,12 +23,21 @@ def check_deps():
         print("[提示] 缺少依赖: PyQt6")
         ans = input("是否现在自动安装？[Y/n] ").strip().lower()
         if ans in ("", "y", "yes"):
-            subprocess.check_call(
-                [sys.executable, "-m", "pip", "install", "PyQt6", "-q"]
-            )
-            print("[完成] 依赖安装成功\n")
+            # 尝试使用 UV 安装
+            try:
+                subprocess.check_call(
+                    [sys.executable, "-m", "uv", "add", "PyQt6"]
+                )
+                print("[完成] 依赖安装成功 (使用 UV)\n")
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                # UV 失败，回退到 pip
+                print("[提示] UV 不可用，使用 pip 安装")
+                subprocess.check_call(
+                    [sys.executable, "-m", "pip", "install", "PyQt6", "-q"]
+                )
+                print("[完成] 依赖安装成功 (使用 pip)\n")
         else:
-            print("[中止] 请手动运行: pip install PyQt6")
+            print("[中止] 请手动运行: uv add PyQt6 或 pip install PyQt6")
             sys.exit(1)
 
 
@@ -47,7 +56,7 @@ def launch_cli(args):
 def print_help():
     print("""
 ╔══════════════════════════════════════╗
-║         Seq_Box  v0.4.0             ║
+║         Seq_Box  v0.5.0             ║
 ║  DNA / 蛋白质序列操作工具箱          ║
 ╚══════════════════════════════════════╝
 

@@ -27,3 +27,13 @@ ref/
 build/
 dist/
 
+  
+# debug & temp files  
+debug_two_sequences.py  
+distance_matrix.txt  
+Talquetamab.fasta  
+Talquetamab_Alignment_Report.html  
+test_msa_colored.html  
+test_msa_fixed.html  
+test_msa_full.html  
+test_report.html 
