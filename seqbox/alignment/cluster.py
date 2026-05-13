@@ -29,15 +29,22 @@ def _find_clustalo_executable() -> Optional[str]:
     _clustalo_searched = True
 
     import os
-    # 优先从项目目录查找（相对于本文件向上两级）
+    possible_paths = ["clustalo"]
+
+    # PyInstaller 打包后：通过 sys._MEIPASS 定位
+    if getattr(sys, 'frozen', False):
+        bundled = os.path.join(
+            sys._MEIPASS, "clustal-omega-1.2.4-win64", "clustalo.exe"
+        )
+        possible_paths.append(os.path.normpath(bundled))
+
+    # 开发环境：通过 __file__ 相对路径定位
     project_clustalo = os.path.join(
         os.path.dirname(__file__), "..", "..",
         "clustal-omega-1.2.4-win64", "clustalo.exe"
     )
-    possible_paths = [
-        "clustalo",
-        os.path.normpath(project_clustalo),
-    ]
+    possible_paths.append(os.path.normpath(project_clustalo))
+
     for path in possible_paths:
         try:
             result = subprocess.run(
@@ -452,7 +459,7 @@ def format_identity_matrix_uniprot(
     return "\n".join(lines)
 
 
-def format_msa_html_colored(records: List[FastaRecord], aligned_records: List[FastaRecord]) -> str:
+def format_msa_html_colored(records: List[FastaRecord], aligned_records: List[FastaRecord], block_size: int = 60, view_id: str = "v") -> str:
     """生成带颜色标记的多序列比对HTML显示（UniProt风格）
 
     颜色方案（蓝色系代表一致性）：
@@ -552,7 +559,6 @@ def format_msa_html_colored(records: List[FastaRecord], aligned_records: List[Fa
             return '#ffffff'
         return '#1f2937'
 
-    block_size = 60
     html_parts = []
 
     css = """
@@ -575,78 +581,92 @@ def format_msa_html_colored(records: List[FastaRecord], aligned_records: List[Fa
             display: block;
             width: 100%;
         }
-        .msa-pos-header {
-            display: flex;
-            margin-bottom: 2px;
-            color: #6b7280;
-            font-size: 9px;
-            width: 100%;
-        }
-        .msa-id-spacer {
-            display: inline-block;
-            width: 120px;
-            flex-shrink: 0;
-            flex-grow: 0;
-        }
-        .msa-pos {
-            display: inline-block;
-            width: 8px;
-            text-align: center;
-            font-weight: bold;
-        }
-        .msa-row {
-            display: flex;
-            width: 100%;
-        }
-        .msa-id {
-            display: inline-block;
-            width: 120px;
-            flex-shrink: 0;
-            flex-grow: 0;
-            color: #1e40af;
-            font-weight: 600;
-            background: #f3f4f6;
-            padding-right: 8px;
-            text-align: right;
-            border-right: 1px solid #d1d5db;
-            margin-right: 4px;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .msa-seq {
-            display: inline-flex;
-            letter-spacing: 0.4px;
-            flex-shrink: 0;
-        }
-        .msa-residue {
-            display: inline-block;
-            width: 11px;
-            text-align: center;
-            padding: 1px 0;
-            border-radius: 2px;
-            font-weight: 500;
-            flex-shrink: 0;
-        }
-        .msa-conservation {
-            display: flex;
-            margin-top: 2px;
-            margin-bottom: 4px;
-            width: 100%;
-        }
-        .msa-conservation-line {
-            display: inline-flex;
-            letter-spacing: 0.4px;
-            color: #1e40af;
-            font-weight: 700;
-            font-size: 10px;
-            flex-shrink: 0;
-        }
-        .msa-conservation-spacer {
-            display: inline-block;
-            width: 125px;
-            flex-shrink: 0;
-            flex-grow: 0;
-        }
+.msa-pos-header {
+position: relative;
+display: flex;
+margin-bottom: 2px;
+color: #6b7280;
+font-size: 11px;
+width: 100%;
+height: 14px;
+}
+.msa-ruler-mark {
+position: absolute;
+top: 0;
+font-weight: bold;
+font-size: 9px;
+white-space: nowrap;
+pointer-events: none;
+}
+.msa-id-spacer {
+display: inline-block;
+width: 133px;
+flex-shrink: 0;
+flex-grow: 0;
+}
+.msa-pos {
+display: inline-block;
+width: 11px;
+text-align: center;
+font-weight: bold;
+font-size: 11px;
+font-family: inherit;
+flex-shrink: 0;
+}
+.msa-row {
+display: flex;
+width: 100%;
+}
+.msa-id {
+display: inline-block;
+width: 129px;
+box-sizing: border-box;
+flex-shrink: 0;
+flex-grow: 0;
+color: #1e40af;
+font-weight: 600;
+background: #f3f4f6;
+padding-right: 8px;
+text-align: right;
+border-right: 1px solid #d1d5db;
+margin-right: 4px;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+.msa-seq {
+display: inline-flex;
+flex-shrink: 0;
+}
+.msa-residue {
+display: inline-block;
+width: 11px;
+text-align: center;
+padding: 0;
+border-radius: 2px;
+font-weight: 500;
+font-size: 11px;
+font-family: inherit;
+flex-shrink: 0;
+}
+.msa-conservation {
+display: flex;
+margin-top: 2px;
+margin-bottom: 4px;
+width: 100%;
+}
+.msa-conservation-line {
+display: inline-flex;
+color: #1e40af;
+font-weight: 700;
+font-size: 11px;
+flex-shrink: 0;
+}
+.msa-conservation-spacer {
+display: inline-block;
+width: 133px;
+flex-shrink: 0;
+flex-grow: 0;
+}
     </style>
     """
 
@@ -657,18 +677,9 @@ def format_msa_html_colored(records: List[FastaRecord], aligned_records: List[Fa
 
         html_parts.append(f'<div class="msa-block">')
 
-        html_parts.append('<div class="msa-pos-header">')
+        block_idx = start // block_size
+        html_parts.append(f'<div class="msa-pos-header" id="msa-ruler-{view_id}-{block_idx}">')
         html_parts.append('<div class="msa-id-spacer"></div>')
-        for pos in range(start, end):
-            col_idx = pos - start
-            if col_idx % 10 == 0:
-                pos_str = str(pos + 1)
-                html_parts.append(f'<span class="msa-pos">{pos_str}</span>')
-                remaining = 10 - len(pos_str)
-                for _ in range(remaining):
-                    html_parts.append('<span class="msa-pos">&nbsp;</span>')
-            else:
-                html_parts.append('<span class="msa-pos">&nbsp;</span>')
         html_parts.append('</div>')
 
         conservation_line = []
@@ -680,7 +691,8 @@ def format_msa_html_colored(records: List[FastaRecord], aligned_records: List[Fa
         for i, (seq_id, seq) in enumerate(zip(seq_ids, seqs)):
             truncated_id = seq_id[:11] + "..." if len(seq_id) > 14 else seq_id
             padded_id = truncated_id.ljust(max_id_len)
-            html_parts.append(f'<div class="msa-row">')
+            row_class = 'msa-row msa-first-row' if i == 0 else 'msa-row'
+            html_parts.append(f'<div class="{row_class}">')
             html_parts.append(f'<span class="msa-id">{padded_id}</span>')
             html_parts.append('<span class="msa-seq">')
             for col_idx, pos in enumerate(range(start, end)):
@@ -688,7 +700,12 @@ def format_msa_html_colored(records: List[FastaRecord], aligned_records: List[Fa
                 col_residues = [seq[pos] for seq in seqs]
                 bg_color = get_cell_color(col_residues, aa)
                 text_color = get_text_color(bg_color, aa)
-                html_parts.append(f'<span class="msa-residue" style="background-color: {bg_color}; color: {text_color};">{aa}</span>')
+                global_pos = pos
+                is_last = (pos == end - 1 and pos < align_len - 1) or (pos == align_len - 1)
+                if global_pos % 10 == 0 or is_last:
+                    html_parts.append(f'<span class="msa-residue msa-ruler-ref" data-ruler-ref="{view_id}-{block_idx}-{global_pos}" style="background-color: {bg_color}; color: {text_color};">{aa}</span>')
+                else:
+                    html_parts.append(f'<span class="msa-residue" style="background-color: {bg_color}; color: {text_color};">{aa}</span>')
             html_parts.append('</span>')
             html_parts.append('</div>')
 
@@ -704,10 +721,7 @@ def format_msa_html_colored(records: List[FastaRecord], aligned_records: List[Fa
 
     html_parts.append('</div>')
 
-    full_html = f"<!DOCTYPE html><html><head><meta charset='utf-8'>{css}</head><body>"
-    full_html += "".join(html_parts)
-    full_html += "</body></html>"
-
+    full_html = css + "".join(html_parts)
     return full_html
 
 
@@ -859,7 +873,10 @@ def generate_html_report(
     </div>
     '''
 
-    msa_html = format_msa_html_colored(records, aligned_records)
+    # 生成多个 block_size 的 MSA 视图供切换
+    msa_html_30 = format_msa_html_colored(records, aligned_records, block_size=30, view_id='30')
+    msa_html_60 = format_msa_html_colored(records, aligned_records, block_size=60, view_id='60')
+    msa_html_90 = format_msa_html_colored(records, aligned_records, block_size=90, view_id='90')
 
     matrix_rows_html = ""
     for i in range(n):
@@ -889,14 +906,6 @@ def generate_html_report(
             else:
                 dist_rows_html += f'<td>{dist:.1f}</td>'
         dist_rows_html += '</tr>'
-
-    sorted_pairs = []
-    for i in range(n):
-        for j in range(i+1, n):
-            sorted_pairs.append((matrix[i][j], records[i].id, records[j].id))
-    sorted_pairs.sort(key=lambda x: x[0], reverse=True)
-
-    guide_tree = _generate_guide_tree(records, matrix)
 
     html = f'''<!DOCTYPE html>
 <html lang="en">
@@ -1044,32 +1053,32 @@ def generate_html_report(
             color: #999;
             font-weight: 500;
         }}
-        .matrix-table .cell-red {{
+        .cell-red {{
             background: #c23b22;
             color: white;
             font-weight: 600;
         }}
-        .matrix-table .cell-orange {{
+        .cell-orange {{
             background: #e87d0d;
             color: white;
             font-weight: 600;
         }}
-        .matrix-table .cell-yellow {{
+        .cell-yellow {{
             background: #f7b801;
             color: #333;
             font-weight: 600;
         }}
-        .matrix-table .cell-lightyellow {{
+        .cell-lightyellow {{
             background: #fde047;
             color: #333;
             font-weight: 500;
         }}
-        .matrix-table .cell-lightgreen {{
+        .cell-lightgreen {{
             background: #86efac;
             color: #333;
             font-weight: 500;
         }}
-        .matrix-table .cell-green {{
+        .cell-green {{
             background: #16a34a;
             color: white;
             font-weight: 500;
@@ -1214,6 +1223,40 @@ def generate_html_report(
             font-weight: bold;
             margin-right: 4px;
         }}
+        .block-size-selector {{
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+        }}
+        .bs-label {{
+            color: #888;
+            margin-right: 4px;
+        }}
+        .bs-option {{
+            display: inline-block;
+            padding: 2px 8px;
+            border: 1px solid #d0d0d0;
+            border-radius: 3px;
+            cursor: pointer;
+            color: #666;
+            background: #fff;
+            transition: all 0.15s;
+            user-select: none;
+        }}
+        .bs-option:hover {{
+            background: #e8f0fe;
+            border-color: #336699;
+        }}
+        .bs-option.active {{
+            background: #336699;
+            color: white;
+            border-color: #336699;
+            font-weight: 600;
+        }}
+        .msa-view {{
+            width: 100%;
+        }}
     </style>
 </head>
 <body>
@@ -1226,7 +1269,6 @@ def generate_html_report(
         <div class="tabs">
             <div class="tab active" onclick="showTab('overview')">Alignment</div>
             <div class="tab" onclick="showTab('matrix')">Identity Matrix</div>
-            <div class="tab" onclick="showTab('tree')">Guide Tree</div>
         </div>
 
         <div id="overview" class="tab-content active">
@@ -1235,9 +1277,17 @@ def generate_html_report(
             <div class="section">
                 <div class="section-header">
                     <h2>Aligned Sequences</h2>
+                    <div class="block-size-selector">
+                        <span class="bs-label">Residues/line:</span>
+                        <span class="bs-option" onclick="switchBlockSize(30)">30</span>
+                        <span class="bs-option active" onclick="switchBlockSize(60)">60</span>
+                        <span class="bs-option" onclick="switchBlockSize(90)">90</span>
+                    </div>
                 </div>
                 <div class="msa-wrapper">
-                    {msa_html}
+                    <div id="msa-30" class="msa-view" style="display:none">{msa_html_30}</div>
+                    <div id="msa-60" class="msa-view" style="display:block">{msa_html_60}</div>
+                    <div id="msa-90" class="msa-view" style="display:none">{msa_html_90}</div>
                 </div>
                 <div class="conservation-info">
                     <span><span class="conservation-symbol" style="color: #c23b22;">*</span> Identical residues</span>
@@ -1274,13 +1324,6 @@ def generate_html_report(
             </div>
         </div>
 
-        <div id="tree" class="tab-content">
-            <div class="section">
-                <h2>Guide Tree</h2>
-                <div class="tree-view">{guide_tree}</div>
-            </div>
-        </div>
-
         <div class="footer">
             Generated by <strong>Seq_Box</strong> | Powered by <strong>Clustal Omega</strong>
         </div>
@@ -1293,55 +1336,70 @@ def generate_html_report(
             document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
         }}
+        function switchBlockSize(size) {{
+            document.querySelectorAll('.msa-view').forEach(el => el.style.display = 'none');
+            document.getElementById('msa-' + size).style.display = 'block';
+            document.querySelectorAll('.bs-option').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            // 重置目标 view 中所有 ruler 的 _done 标志
+            var targetView = document.getElementById('msa-' + size);
+            targetView.querySelectorAll('[id^="msa-ruler-"]').forEach(function(r) {{
+                r._done = false;
+                var marks = r.querySelectorAll('.msa-ruler-mark');
+                marks.forEach(function(m) {{ m.remove(); }});
+            }});
+            requestAnimationFrame(function() {{
+                requestAnimationFrame(function() {{
+                    alignRulers();
+                }});
+            }});
+        }}
+        function alignRulers() {{
+            document.querySelectorAll('[id^="msa-ruler-"]').forEach(function(ruler) {{
+                if (ruler._done) return;
+                // 检查可见性：父级 msa-view 必须可见
+                var view = ruler.closest('.msa-view');
+                if (view && view.style.display === 'none') return;
+                if (view && view.offsetParent === null) return;
+                ruler._done = true;
+                var blockEl = ruler.parentElement;
+                var firstRow = blockEl.querySelector('.msa-first-row');
+                if (!firstRow) return;
+                var seqEl = firstRow.querySelector('.msa-seq');
+                if (!seqEl) return;
+                var cols = seqEl.querySelectorAll('.msa-residue');
+                var rulerRect = ruler.getBoundingClientRect();
+                for (var i = 0; i < cols.length; i++) {{
+                    var col = cols[i];
+                    var refData = col.dataset.rulerRef;
+                    if (!refData) continue;
+                    var parts = refData.split('-');
+                    var posNum = parseInt(parts[2]) + 1;
+                    var colRect = col.getBoundingClientRect();
+                    var left = colRect.left - rulerRect.left + colRect.width / 2;
+                    var mark = document.createElement('span');
+                    mark.className = 'msa-ruler-mark';
+                    mark.style.left = left + 'px';
+                    mark.textContent = posNum;
+                    ruler.appendChild(mark);
+                }}
+            }});
+        }}
+        window.addEventListener('load', function() {{ setTimeout(alignRulers, 100); }});
+        window.addEventListener('resize', function() {{ 
+            document.querySelectorAll('[id^="msa-ruler-"]').forEach(function(r) {{ 
+                r._done = false; 
+                // 清除旧的 ruler marks (保留 spacer)
+                var marks = r.querySelectorAll('.msa-ruler-mark');
+                marks.forEach(function(m) {{ m.remove(); }});
+            }});
+            setTimeout(alignRulers, 100); 
+        }});
     </script>
 </body>
 </html>'''
 
     return html
-
-
-def _generate_guide_tree(records: List[FastaRecord], matrix: List[List[float]]) -> str:
-    """生成简化的 guide tree 表示"""
-    n = len(records)
-    if n == 0:
-        return "No sequences"
-
-    if n == 1:
-        return records[0].id
-
-    if n == 2:
-        return f"({records[0].id}, {records[1].id})"
-
-    sorted_pairs = []
-    for i in range(n):
-        for j in range(i+1, n):
-            sorted_pairs.append((matrix[i][j], i, j, records[i].id, records[j].id))
-    sorted_pairs.sort(key=lambda x: x[0], reverse=True)
-
-    tree_lines = ["Guide Tree (based on identity):", ""]
-
-    if n <= 4:
-        tree_lines.append("    " + records[0].id)
-        tree_lines.append("    |")
-        tree_lines.append("    +--" + records[1].id)
-        for k in range(2, n):
-            tree_lines.append("    |")
-            tree_lines.append("    +--" + records[k].id)
-    else:
-        tree_lines.append(f"  {'/' * 40}")
-        tree_lines.append(f" /{'':^38}\\")
-        tree_lines.append(f"({records[0].id[:15]:^15}   {records[1].id[:15]:^15})")
-        tree_lines.append(f" \\{'':^38}/")
-        tree_lines.append(f"  {'/' * 40}")
-        tree_lines.append(f"         |")
-        tree_lines.append(f"      Other sequences...")
-
-    tree_lines.append("")
-    tree_lines.append("Top 3 most similar pairs:")
-    for idx, (identity, i, j, id1, id2) in enumerate(sorted_pairs[:3]):
-        tree_lines.append(f"  {idx+1}. {id1} - {id2}: {identity:.1f}% identity")
-
-    return "\n".join(tree_lines)
 
 
 def get_msa_table_data(

@@ -217,6 +217,27 @@ MIT License
 - 蛋白质分析表格新增 Hb (GRAVY) 列
 - UI 微调：表格内容与表头统一左对齐，日志框边距对齐
 
+### 0.6.0
+- HTML 报告全面优化
+  - Percent Identity Matrix 图例增加颜色区分
+  - 移除无实际价值的 Guide Tree 页面
+  - Alignment 页面标尺改为 JS 动态定位，完美对齐残基列
+  - 新增残基/行切换（30 / 60 / 90），行末自动标记位置
+- 打包脚本修复
+  - 修复 Python 环境不匹配导致的打包失败
+  - 修复中文乱码问题
+- Clustal Omega 运行时路径修复
+  - 打包后自动从 _MEIPASS 定位外部工具
+
+### 0.5.0
+- 多序列比对功能（MSA）
+  - Clustal Omega 集成支持
+  - 纯 Python Needleman-Wunsch 算法回退
+- HTML 报告导出
+  - UniProt 风格多序列比对展示
+  - Percent Identity Matrix 热力图
+  - Distance Matrix 显示
+
 ### 0.4.0
 - 新增蛋白质理化性质分析功能
   - 支持多链蛋白质分析

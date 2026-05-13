@@ -37,3 +37,7 @@ test_msa_colored.html
 test_msa_fixed.html  
 test_msa_full.html  
 test_report.html 
+
+# egg-info
+seqbox.egg-info/
+test_align.html
